@@ -368,3 +368,79 @@ class Jamba(nn.Module):
         else:
             # return the logits
             return OutputHead(self.dim, -1)(x)
+        
+
+class JambaSequenceClassfication(nn.Module):
+
+    def __init__(self,JambaConfig):
+        super().__init__()
+        self.jamba = Jamba(
+            dim=JambaConfig.dim,
+            depth=JambaConfig.depth,
+            num_tokens=JambaConfig.num_tokens,
+            d_state=JambaConfig.d_state,
+            d_conv=JambaConfig.d_conv,
+            heads=JambaConfig.heads,
+            num_experts=JambaConfig.num_experts,
+            num_experts_per_token=JambaConfig.num_experts_per_token,
+            pre_emb_norm=JambaConfig.pre_emb_norm,
+            return_embeddings=JambaConfig.return_embeddings
+        )
+
+        self.linear = nn.Linear(
+            JambaConfig.dim,
+            JambaConfig.num_classes
+        )
+        self.dropout = nn.Dropout(JambaConfig.dropout)
+        self.classifier = nn.LogSoftmax(dim=-1)
+
+
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        Forward pass of the Jamba model.
+
+        Args:
+            x (Tensor): Input tensor.
+
+        Returns:
+            Tensor: Output tensor.
+        """
+        x = self.jamba(x)
+        x = self.dropout(x)
+        x = self.linear(x)
+        x = self.classifier(x)
+        return x
+    
+class JambaConfig:
+    def __init__(
+        self,
+        dim: int,
+        depth: int,
+        num_tokens: int,
+        d_state: int ,
+        heads: int,
+        d_conv: int = 128,
+        num_experts: int = 8,
+        num_experts_per_token: int = 2,
+        pre_emb_norm: bool = False,
+        return_embeddings: bool = False,
+        hidden_size: int = 768,
+        num_classes: int = 2,
+        dropout: float = 0.1
+    ):
+        self.dim = dim
+        self.depth = depth
+        self.num_tokens = num_tokens
+        self.d_state = d_state
+        self.d_conv = d_conv
+        self.heads = heads
+        self.num_experts = num_experts
+        self.num_experts_per_token = num_experts_per_token
+        self.pre_emb_norm = pre_emb_norm
+        self.return_embeddings = return_embeddings
+        self.hidden_size = hidden_size
+        self.num_classes = num_classes
+        self.dropout = dropout
+        self.model_type = "Jamba"
+
+
